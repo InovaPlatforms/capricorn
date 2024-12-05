@@ -25,7 +25,7 @@ export default function Home() {
           </p>
           <div className="flex gap-4">
             <button className="px-8 py-4 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-2xl font-bold rounded-full shadow-lg hover:opacity-90 transition">
-              Sign Up & Explore
+              Sign Up &amp; Explore
             </button>
             <Link href="/tequila" className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-2xl font-bold rounded-full shadow-lg hover:opacity-90 transition">
               View Tequila
@@ -89,7 +89,7 @@ export default function Home() {
           </h2>
           <p className="text-2xl text-gray-300 leading-relaxed">
             Unlock exclusive content, connect with your favorite creators, and experience premium entertainment like never before. 
-            Here’s what you’ll get:
+            Here&apos;s what you&apos;ll get:
           </p>
           <ul className="text-xl text-gray-300 space-y-4">
             <li>🎥 Full-length videos and behind-the-scenes content</li>
@@ -158,7 +158,7 @@ export default function Home() {
             Ready to Unlock the Experience?
           </h2>
           <p className="text-2xl text-white/80 mb-12">
-            Don’t miss out on exclusive content, full videos, and intimate connections. 
+            Don&apos;t miss out on exclusive content, full videos, and intimate connections. 
             Join now and start exploring.
           </p>
           <button className="px-12 py-4 bg-white text-pink-500 text-2xl font-bold rounded-full shadow-lg hover:opacity-90 transition">
@@ -169,5 +169,3 @@ export default function Home() {
     </main>
   );
 }
-
-
