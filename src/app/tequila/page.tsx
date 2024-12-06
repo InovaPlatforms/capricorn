@@ -254,18 +254,6 @@ export default function TequilaProfile() {
                 )}
                 <div className="absolute bottom-0 left-0 right-0 p-4 text-white opacity-0 group-hover:opacity-100 transition-opacity">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <button className="hover:text-blue-500 transition-colors">
-                        <Heart size={20} />
-                      </button>
-                      <button className="hover:text-blue-500 transition-colors">
-                        <MessageCircle size={20} />
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <DollarSign size={16} className="text-blue-500" />
-                      <span className="text-sm font-medium">Unlock for $9.99</span>
-                    </div>
                   </div>
                 </div>
               </div>
