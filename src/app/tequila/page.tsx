@@ -1,9 +1,11 @@
 'use client';
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { VideoError } from '../../types';
 import { Play, Heart, MessageCircle, DollarSign } from 'lucide-react';
 
 const BUCKET_NAME = 'unassigned-videos';
+const VIDEOS_PER_PAGE = 6;
+const TOTAL_VIDEOS = 36;
 
 interface VideoState {
   isPlaying: boolean;
@@ -13,15 +15,84 @@ interface VideoState {
 
 export default function TequilaProfile() {
   const [videoUrls, setVideoUrls] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [videoStates, setVideoStates] = useState<{ [key: string]: VideoState }>({});
+  const [loadedPages, setLoadedPages] = useState<Set<number>>(new Set());
+  const [hasMore, setHasMore] = useState(true);
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
+  const loadVideos = useCallback(async () => {
+    if (loading || !hasMore) return;
+    
+    try {
+      setLoading(true);
+      
+      // Calculate the next page to load
+      const nextPage = Math.floor(videoUrls.length / VIDEOS_PER_PAGE) + 1;
+      
+      // Check if we've already loaded this page
+      if (loadedPages.has(nextPage)) {
+        setLoading(false);
+        return;
+      }
+      
+      const startIndex = (nextPage - 1) * VIDEOS_PER_PAGE;
+      const newUrls = Array.from({ length: VIDEOS_PER_PAGE }, (_, i) => {
+        const videoNumber = startIndex + i + 1;
+        if (videoNumber > TOTAL_VIDEOS) return null;
+        const paddedId = videoNumber.toString().padStart(4, '0');
+        return `https://storage.googleapis.com/${BUCKET_NAME}/nk/${paddedId}.mp4`;
+      }).filter((url): url is string => url !== null);
+
+      if (newUrls.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      setVideoUrls(prev => [...prev, ...newUrls]);
+      videoRefs.current = [...videoRefs.current, ...new Array(newUrls.length).fill(null)];
+
+      const initialStates: { [key: string]: VideoState } = {};
+      newUrls.forEach(url => {
+        initialStates[url] = { isPlaying: false, error: null, thumbnail: null };
+      });
+      setVideoStates(prev => ({ ...prev, ...initialStates }));
+
+      // Mark this page as loaded
+      setLoadedPages(prev => new Set(Array.from(prev).concat([nextPage])));
+      setHasMore(startIndex + VIDEOS_PER_PAGE < TOTAL_VIDEOS);
+    } catch (error) {
+      console.error('Error loading videos:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load videos');
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, hasMore, videoUrls.length, loadedPages]);
+
+  // Intersection Observer for infinite scroll
   useEffect(() => {
-    // Create intersection observer
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting) {
+          loadVideos();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [loadVideos]);
+
+  // Video playback observer
+  useEffect(() => {
     observerRef.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -30,6 +101,7 @@ export default function TequilaProfile() {
             video.play().catch(err => console.log('Auto-play prevented:', err));
           } else {
             video.pause();
+            video.currentTime = 0;
           }
         });
       },
@@ -58,35 +130,9 @@ export default function TequilaProfile() {
     };
   }, [videoUrls]);
 
+  // Initial load
   useEffect(() => {
-    const generateVideoUrls = () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const urls = Array.from({ length: 36 }, (_, i) => {
-          const paddedId = (i + 1).toString().padStart(4, '0');
-          return `https://storage.googleapis.com/${BUCKET_NAME}/nk/${paddedId}.mp4`;
-        });
-        
-        console.log('Generated video URLs:', urls.length);
-        setVideoUrls(urls);
-        videoRefs.current = new Array(urls.length).fill(null);
-        
-        const initialStates: { [key: string]: VideoState } = {};
-        urls.forEach(url => {
-          initialStates[url] = { isPlaying: false, error: null, thumbnail: null };
-        });
-        setVideoStates(initialStates);
-      } catch (error) {
-        console.error('Error generating video URLs:', error);
-        setError(error instanceof Error ? error.message : 'Failed to load videos');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    generateVideoUrls();
+    loadVideos();
   }, []);
 
   const generateThumbnail = (video: HTMLVideoElement, url: string) => {
@@ -127,27 +173,6 @@ export default function TequilaProfile() {
     }));
   };
 
-  const handlePlayClick = async (url: string, index: number) => {
-    const video = videoRefs.current[index];
-    if (!video) return;
-
-    try {
-      setVideoStates(prev => ({
-        ...prev,
-        [url]: { ...prev[url], isPlaying: true }
-      }));
-      
-      await video.load();
-      await video.play();
-    } catch (error) {
-      console.error('Error playing video:', error);
-      setVideoStates(prev => ({
-        ...prev,
-        [url]: { ...prev[url], error: 'Failed to play video' }
-      }));
-    }
-  };
-
   const retryVideo = async (url: string, index: number) => {
     const video = videoRefs.current[index];
     if (!video) return;
@@ -167,30 +192,6 @@ export default function TequilaProfile() {
       }));
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0D0D0D] text-white">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-center h-screen">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#0D0D0D] text-white">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="text-center">
-            <p className="text-red-500 text-xl">Error: {error}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <main className="min-h-screen bg-[#0D0D0D] text-white">
@@ -242,7 +243,7 @@ export default function TequilaProfile() {
                   playsInline
                   loop
                   muted
-                  preload="metadata"
+                  preload="none"
                   onLoadedData={(e) => handleVideoLoad(url, e)}
                   onError={(e) => handleVideoError(url, e)}
                 />
@@ -276,6 +277,13 @@ export default function TequilaProfile() {
               </div>
             );
           })}
+          
+          {/* Loading indicator and infinite scroll trigger */}
+          <div ref={loadMoreRef} className="py-8 flex justify-center">
+            {loading && (
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500" />
+            )}
+          </div>
         </div>
       </div>
     </main>
