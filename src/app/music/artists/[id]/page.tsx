@@ -22,6 +22,7 @@ export default function ArtistPage({ params }: { params: { id: string } }) {
   const artist = artists.find(a => a.id === params.id);
   const bucket = musicBuckets.find(b => b.name === artist?.name);
   const { currentTrack, isPlaying, playTrack, pauseTrack } = useMusic();
+  const [volume, setVolume] = useState(1);
 
   useEffect(() => {
     const fetchArtistTracks = async () => {
@@ -72,6 +73,10 @@ export default function ArtistPage({ params }: { params: { id: string } }) {
     } else {
       playTrack(track);
     }
+  };
+
+  const handleVolumeChange = (newVolume: number) => {
+    setVolume(newVolume);
   };
 
   if (!artist || !bucket) return null;
@@ -200,7 +205,14 @@ export default function ArtistPage({ params }: { params: { id: string } }) {
           )}
         </div>
       </div>
-      <FloatingControls />
+      <FloatingControls 
+        track={currentTrack}
+        isPlaying={isPlaying}
+        volume={volume}
+        onPlay={playTrack}
+        onPause={pauseTrack}
+        onVolumeChange={handleVolumeChange}
+      />
     </>
   );
 } 
