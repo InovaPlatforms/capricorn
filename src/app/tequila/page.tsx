@@ -18,6 +18,45 @@ export default function TequilaProfile() {
   const [videoStates, setVideoStates] = useState<{ [key: string]: VideoState }>({});
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  useEffect(() => {
+    // Create intersection observer
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const video = entry.target as HTMLVideoElement;
+          if (entry.isIntersecting) {
+            video.play().catch(err => console.log('Auto-play prevented:', err));
+          } else {
+            video.pause();
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  // Add observer to new videos
+  useEffect(() => {
+    videoRefs.current.forEach((videoRef) => {
+      if (videoRef && observerRef.current) {
+        observerRef.current.observe(videoRef);
+      }
+    });
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [videoUrls]);
 
   useEffect(() => {
     const generateVideoUrls = () => {
@@ -188,32 +227,25 @@ export default function TequilaProfile() {
 
       {/* Video Grid */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-8">
           {videoUrls.map((url, index) => {
             const state = videoStates[url];
             return (
               <div key={url} className="relative aspect-video bg-[#1A1A1A] rounded-lg overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-0 group-hover:opacity-100 transition-opacity" />
                 <video
                   ref={(el) => { videoRefs.current[index] = el; }}
                   src={url}
-                  className="w-full h-full object-cover"
+                  className={`w-full h-full object-cover transition-transform duration-300 ${
+                    state?.isPlaying ? 'scale-[1.02] shadow-xl relative z-10' : ''
+                  }`}
                   controls={state?.isPlaying}
                   playsInline
+                  loop
+                  muted
                   preload="metadata"
                   onLoadedData={(e) => handleVideoLoad(url, e)}
                   onError={(e) => handleVideoError(url, e)}
                 />
-                {!state?.isPlaying && !state?.error && (
-                  <button
-                    onClick={() => handlePlayClick(url, index)}
-                    className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <div className="w-16 h-16 flex items-center justify-center rounded-full bg-blue-500 bg-opacity-90 group-hover:bg-opacity-100 transition-all transform group-hover:scale-110">
-                      <Play className="w-8 h-8 text-white" fill="white" />
-                    </div>
-                  </button>
-                )}
                 {state?.error && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 p-4">
                     <p className="text-red-500 text-sm mb-2">{state.error}</p>
