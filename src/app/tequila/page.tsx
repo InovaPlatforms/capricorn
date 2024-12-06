@@ -24,8 +24,17 @@ export default function TequilaProfile() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const lastVideoNumberRef = useRef<number | null>(null);
 
-  const getRandomVideoNumber = () => Math.floor(Math.random() * TOTAL_VIDEOS) + 1;
+  const getRandomVideoNumber = () => {
+    let newNumber: number;
+    do {
+      newNumber = Math.floor(Math.random() * TOTAL_VIDEOS) + 1;
+    } while (newNumber === lastVideoNumberRef.current);
+    
+    lastVideoNumberRef.current = newNumber;
+    return newNumber;
+  };
 
   const loadVideos = useCallback(async () => {
     if (loading) return;
