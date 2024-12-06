@@ -19,39 +19,26 @@ export default function TequilaProfile() {
   const [error, setError] = useState<string | null>(null);
   const [videoStates, setVideoStates] = useState<{ [key: string]: VideoState }>({});
   const [loadedPages, setLoadedPages] = useState<Set<number>>(new Set());
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore] = useState(true);
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
+  const getRandomVideoNumber = () => Math.floor(Math.random() * TOTAL_VIDEOS) + 1;
+
   const loadVideos = useCallback(async () => {
-    if (loading || !hasMore) return;
+    if (loading) return;
     
     try {
       setLoading(true);
       
-      // Calculate the next page to load
-      const nextPage = Math.floor(videoUrls.length / VIDEOS_PER_PAGE) + 1;
-      
-      // Check if we've already loaded this page
-      if (loadedPages.has(nextPage)) {
-        setLoading(false);
-        return;
-      }
-      
-      const startIndex = (nextPage - 1) * VIDEOS_PER_PAGE;
-      const newUrls = Array.from({ length: VIDEOS_PER_PAGE }, (_, i) => {
-        const videoNumber = startIndex + i + 1;
-        if (videoNumber > TOTAL_VIDEOS) return null;
+      // Generate random video numbers for this batch
+      const newUrls = Array.from({ length: VIDEOS_PER_PAGE }, () => {
+        const videoNumber = getRandomVideoNumber();
         const paddedId = videoNumber.toString().padStart(4, '0');
         return `https://storage.googleapis.com/${BUCKET_NAME}/nk/${paddedId}.mp4`;
-      }).filter((url): url is string => url !== null);
-
-      if (newUrls.length === 0) {
-        setHasMore(false);
-        return;
-      }
+      });
 
       setVideoUrls(prev => [...prev, ...newUrls]);
       videoRefs.current = [...videoRefs.current, ...new Array(newUrls.length).fill(null)];
@@ -62,16 +49,13 @@ export default function TequilaProfile() {
       });
       setVideoStates(prev => ({ ...prev, ...initialStates }));
 
-      // Mark this page as loaded
-      setLoadedPages(prev => new Set(Array.from(prev).concat([nextPage])));
-      setHasMore(startIndex + VIDEOS_PER_PAGE < TOTAL_VIDEOS);
     } catch (error) {
       console.error('Error loading videos:', error);
       setError(error instanceof Error ? error.message : 'Failed to load videos');
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, videoUrls.length, loadedPages]);
+  }, [loading]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
