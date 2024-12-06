@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { VideoError } from '../../types';
 import { Play, Heart, MessageCircle, DollarSign } from 'lucide-react';
+import Script from 'next/script';
 
 const BUCKET_NAME = 'unassigned-videos';
 const VIDEOS_PER_PAGE = 6;
@@ -278,6 +279,15 @@ export default function TequilaProfile() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* ElevenLabs Convai Widget */}
+      <div className="fixed bottom-0 w-full z-50">
+        <elevenlabs-convai agent-id="gDy7xxfw05JopPvZ7jDF"></elevenlabs-convai>
+        <Script 
+          src="https://elevenlabs.io/convai-widget/index.js" 
+          strategy="lazyOnload"
+        />
       </div>
     </main>
   );
