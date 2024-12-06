@@ -77,13 +77,13 @@ export default function ArtistPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     fetchBucketStats();
-  }, [artist]);
+  }, [artist, fetchBucketStats]);
 
   useEffect(() => {
     if (activeTab === 'stats') {
       fetchBucketStats();
     }
-  }, [activeTab]);
+  }, [activeTab, fetchBucketStats]);
 
   useEffect(() => {
     if (activeTab === 'stats') {
@@ -93,7 +93,7 @@ export default function ArtistPage({ params }: { params: { id: string } }) {
 
       return () => clearInterval(interval);
     }
-  }, [activeTab]);
+  }, [activeTab, fetchBucketStats]);
 
     function getBucketNameForArtist(artistId: string): string {
       const bucketMap: { [key: string]: string } = {

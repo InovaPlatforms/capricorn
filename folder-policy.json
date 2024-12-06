@@ -1,0 +1,1 @@
+{"bindings":[{"members":["allUsers"],"role":"roles/storage.objectViewer","condition":{"title":"public_nk_folder","description":"Only allow public access to nk/ folder","expression":"resource.name.startsWith(\"projects/_/buckets/unassigned-videos/objects/nk/\")"}}]}

@@ -49,3 +49,4 @@ next-env.d.ts
 
 # Specific folders that might contain secrets
 **/youtube/*/*.json
+.secrets/

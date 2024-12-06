@@ -46,7 +46,7 @@ export default function EndlessHouseMix() {
       console.log('Initial track prepared for genre: house')
     }
     initializeAudio()
-  }, [])
+  }, [prepareRandomTrack])
 
   useEffect(() => {
     const checkMobile = () => {
@@ -205,24 +205,26 @@ export default function EndlessHouseMix() {
       }
     }
 
-    if (audioRef.current) {
-      audioRef.current.addEventListener('ended', handleEnded)
+    const currentAudioRef = audioRef.current
+
+    if (currentAudioRef) {
+      currentAudioRef.addEventListener('ended', handleEnded)
       if (!isMobile) {
-        audioRef.current.addEventListener('canplay', handleCanPlay)
+        currentAudioRef.addEventListener('canplay', handleCanPlay)
       }
       console.log('Event listeners for ended and canplay added')
     }
 
     return () => {
-      if (audioRef.current) {
-        audioRef.current.removeEventListener('ended', handleEnded)
+      if (currentAudioRef) {
+        currentAudioRef.removeEventListener('ended', handleEnded)
         if (!isMobile) {
-          audioRef.current.removeEventListener('canplay', handleCanPlay)
+          currentAudioRef.removeEventListener('canplay', handleCanPlay)
         }
         console.log('Event listeners for ended and canplay removed')
       }
     }
-  }, [currentGenre, nextTrack, isMobile])
+  }, [currentGenre, nextTrack, isMobile, prepareNextTrack])
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-black via-gray-900 to-red-900 overflow-hidden">
