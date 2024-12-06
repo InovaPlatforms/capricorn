@@ -1,13 +1,14 @@
 'use client';
 import React, { useEffect, useState, useRef } from "react";
 import { VideoError } from '../../types';
-import { Play } from 'lucide-react';
+import { Play, Heart, MessageCircle, DollarSign } from 'lucide-react';
 
 const BUCKET_NAME = 'unassigned-videos';
 
 interface VideoState {
   isPlaying: boolean;
   error: string | null;
+  thumbnail: string | null;
 }
 
 export default function TequilaProfile() {
@@ -16,6 +17,7 @@ export default function TequilaProfile() {
   const [error, setError] = useState<string | null>(null);
   const [videoStates, setVideoStates] = useState<{ [key: string]: VideoState }>({});
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const generateVideoUrls = () => {
@@ -23,7 +25,6 @@ export default function TequilaProfile() {
         setLoading(true);
         setError(null);
         
-        // Generate URLs directly from the public bucket
         const urls = Array.from({ length: 36 }, (_, i) => {
           const paddedId = (i + 1).toString().padStart(4, '0');
           return `https://storage.googleapis.com/${BUCKET_NAME}/nk/${paddedId}.mp4`;
@@ -33,10 +34,9 @@ export default function TequilaProfile() {
         setVideoUrls(urls);
         videoRefs.current = new Array(urls.length).fill(null);
         
-        // Initialize video states
         const initialStates: { [key: string]: VideoState } = {};
         urls.forEach(url => {
-          initialStates[url] = { isPlaying: false, error: null };
+          initialStates[url] = { isPlaying: false, error: null, thumbnail: null };
         });
         setVideoStates(initialStates);
       } catch (error) {
@@ -49,6 +49,31 @@ export default function TequilaProfile() {
 
     generateVideoUrls();
   }, []);
+
+  const generateThumbnail = (video: HTMLVideoElement, url: string) => {
+    if (!canvasRef.current) {
+      canvasRef.current = document.createElement('canvas');
+    }
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    try {
+      const thumbnail = canvas.toDataURL('image/jpeg');
+      setVideoStates(prev => ({
+        ...prev,
+        [url]: { ...prev[url], thumbnail }
+      }));
+    } catch (error) {
+      console.error('Error generating thumbnail:', error);
+    }
+  };
+
+  const handleVideoLoad = (url: string, event: React.SyntheticEvent<HTMLVideoElement, Event>) => {
+    const video = event.target as HTMLVideoElement;
+    generateThumbnail(video, url);
+  };
 
   const handleVideoError = (url: string, event: React.SyntheticEvent<HTMLVideoElement, Event>) => {
     const video = event.target as HTMLVideoElement;
@@ -73,7 +98,6 @@ export default function TequilaProfile() {
         [url]: { ...prev[url], isPlaying: true }
       }));
       
-      // Load and play the video
       await video.load();
       await video.play();
     } catch (error) {
@@ -92,7 +116,7 @@ export default function TequilaProfile() {
     try {
       setVideoStates(prev => ({
         ...prev,
-        [url]: { isPlaying: false, error: null }
+        [url]: { isPlaying: false, error: null, thumbnail: null }
       }));
       
       await video.load();
@@ -107,10 +131,10 @@ export default function TequilaProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-black via-zinc-900 to-black text-white">
+      <div className="min-h-screen bg-[#0D0D0D] text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+          <div className="flex items-center justify-center h-screen">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
           </div>
         </div>
       </div>
@@ -119,7 +143,7 @@ export default function TequilaProfile() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-black via-zinc-900 to-black text-white">
+      <div className="min-h-screen bg-[#0D0D0D] text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="text-center">
             <p className="text-red-500 text-xl">Error: {error}</p>
@@ -130,17 +154,46 @@ export default function TequilaProfile() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-black via-zinc-900 to-black text-white">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent">
-          Tequila&apos;s Videos
-        </h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <main className="min-h-screen bg-[#0D0D0D] text-white">
+      {/* Profile Header */}
+      <div className="bg-gradient-to-b from-blue-600/20 to-[#0D0D0D] pb-6">
+        <div className="max-w-7xl mx-auto px-4 pt-8">
+          <div className="flex items-center gap-6 mb-8">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-2xl font-bold">
+              T
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold mb-2">Tequila</h1>
+              <div className="flex items-center gap-4 text-gray-300">
+                <span className="flex items-center gap-1">
+                  <Heart size={16} /> 12.4K
+                </span>
+                <span className="flex items-center gap-1">
+                  <MessageCircle size={16} /> 234
+                </span>
+              </div>
+            </div>
+            <button className="ml-auto px-6 py-2 bg-blue-500 hover:bg-blue-600 rounded-full font-semibold transition-colors">
+              Subscribe
+            </button>
+          </div>
+          
+          <div className="flex gap-4 border-b border-white/10 pb-4">
+            <button className="px-4 py-2 text-blue-500 border-b-2 border-blue-500">Posts</button>
+            <button className="px-4 py-2 text-gray-400 hover:text-white transition-colors">Photos</button>
+            <button className="px-4 py-2 text-gray-400 hover:text-white transition-colors">Videos</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Video Grid */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {videoUrls.map((url, index) => {
             const state = videoStates[url];
-            const paddedId = (index + 1).toString().padStart(4, '0');
             return (
-              <div key={url} className="relative aspect-video bg-zinc-900 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
+              <div key={url} className="relative aspect-video bg-[#1A1A1A] rounded-lg overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-0 group-hover:opacity-100 transition-opacity" />
                 <video
                   ref={(el) => { videoRefs.current[index] = el; }}
                   src={url}
@@ -148,30 +201,46 @@ export default function TequilaProfile() {
                   controls={state?.isPlaying}
                   playsInline
                   preload="metadata"
-                  poster={`https://storage.googleapis.com/${BUCKET_NAME}/thumbnails/nk/${paddedId}.jpg`}
+                  onLoadedData={(e) => handleVideoLoad(url, e)}
                   onError={(e) => handleVideoError(url, e)}
                 />
                 {!state?.isPlaying && !state?.error && (
                   <button
                     onClick={() => handlePlayClick(url, index)}
-                    className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 hover:bg-opacity-40 transition-opacity group"
+                    className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
-                    <div className="w-16 h-16 flex items-center justify-center rounded-full bg-pink-500 bg-opacity-90 group-hover:bg-opacity-100 transition-all transform group-hover:scale-110">
-                      <Play className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 flex items-center justify-center rounded-full bg-blue-500 bg-opacity-90 group-hover:bg-opacity-100 transition-all transform group-hover:scale-110">
+                      <Play className="w-8 h-8 text-white" fill="white" />
                     </div>
                   </button>
                 )}
                 {state?.error && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-75 p-4">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 p-4">
                     <p className="text-red-500 text-sm mb-2">{state.error}</p>
                     <button
                       onClick={() => retryVideo(url, index)}
-                      className="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:opacity-90 transition-opacity"
+                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
                     >
                       Retry
                     </button>
                   </div>
                 )}
+                <div className="absolute bottom-0 left-0 right-0 p-4 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <button className="hover:text-blue-500 transition-colors">
+                        <Heart size={20} />
+                      </button>
+                      <button className="hover:text-blue-500 transition-colors">
+                        <MessageCircle size={20} />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <DollarSign size={16} className="text-blue-500" />
+                      <span className="text-sm font-medium">Unlock for $9.99</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             );
           })}
