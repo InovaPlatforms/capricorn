@@ -14,4 +14,13 @@ export interface VideoError {
     duration: number;
     muted: boolean;
   };
+}
+
+export interface Track {
+  id: string;
+  title: string;
+  artist: string;
+  url: string;
+  duration?: number;
+  image?: string;
 } 
